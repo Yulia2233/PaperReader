@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 def latex_escape(value: str) -> str:
-    replacements = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}", "$": r"\$"}
+    replacements = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}", "$": r"\$", "^": r"\textasciicircum{}", "~": r"\textasciitilde{}"}
     for old, new in replacements.items():
         value = value.replace(old, new)
     return value
@@ -33,6 +33,32 @@ def experiment_table(experiments: list[dict]) -> str:
         values = [experiment.get("name", ""), experiment.get("what_it_tests", ""), experiment.get("what_it_proves", ""), experiment.get("result_summary", "")]
         rows.append(" & ".join(latex_escape(value.replace("\n", " ")) for value in values) + r" \\")
     return "\\clearpage\n\\onecolumn\n\\begin{table}[ht]\n\\centering\n\\caption{实验设置与结果摘要}\n\\label{tab:experiments}\n\\begin{tabularx}{0.98\\textwidth}{>{\\raggedright\\arraybackslash}p{0.16\\textwidth}>{\\raggedright\\arraybackslash}p{0.24\\textwidth}>{\\raggedright\\arraybackslash}p{0.25\\textwidth}X}\n\\toprule\n实验 & 验证什么 & 证明什么 & 结果 \\\\ \n\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\n\\end{tabularx}\n\\end{table}"
+
+
+def source_table_block(table: dict, two_column: bool) -> str:
+    columns = table.get("columns", [])
+    if not columns:
+        return ""
+    headers = [latex_escape(column.get("header_zh") or column.get("header_en", "")) for column in columns]
+    rows = []
+    for row in table.get("rows", []):
+        cells = row.get("cells_zh") or row.get("cells_en", [])
+        cells = list(cells) + [""] * (len(headers) - len(cells))
+        rows.append(" & ".join(latex_escape(str(cell)) for cell in cells[:len(headers)]) + r" \\")
+    column_spec = "X" * len(headers)
+    environment = "table*" if two_column else "table"
+    width = "0.98\\textwidth" if two_column else "0.98\\linewidth"
+    return (
+        f"\\begin{{{environment}}}[t]\n\\centering\n"
+        f"\\caption{{{latex_escape(table.get('caption_zh') or table.get('caption_en', ''))}}}\n"
+        f"\\label{{tab:{latex_escape(table.get('id', 'table'))}}}\n"
+        f"\\begin{{tabularx}}{{{width}}}{{{column_spec}}}\n\\toprule\n"
+        + " & ".join(headers)
+        + r" \\ "
+        + "\n\\midrule\n"
+        + "\n".join(rows)
+        + f"\n\\bottomrule\n\\end{{tabularx}}\n\\end{{{environment}}}"
+    )
 
 
 def compile_pdf(args: argparse.Namespace, tex_path: Path) -> int:
@@ -78,6 +104,15 @@ def main() -> int:
         else:
             unassigned.append(figure)
 
+    tables_by_section: dict[str, list[dict]] = {}
+    unassigned_tables: list[dict] = []
+    for table in data.get("tables", []):
+        section_id = table.get("section_id")
+        if section_id:
+            tables_by_section.setdefault(section_id, []).append(table)
+        else:
+            unassigned_tables.append(table)
+
     body: list[str] = []
     sections = sorted(data.get("sections", []), key=lambda item: item.get("order", 0))
     for index, section in enumerate(sections):
@@ -91,8 +126,26 @@ def main() -> int:
         else:
             body.append("\\section*{%s}\n%s" % (title, translated))
         body.extend(figure_block(figure) for figure in figures_by_section.get(section_id, []))
+        body.extend(
+            source_table_block(
+                table,
+                data.get("layout_profile", "two-column") == "two-column" and not args.single_column,
+            )
+            for table in tables_by_section.get(section_id, [])
+        )
     if unassigned:
         body.append("\\section*{图表 / Figures}\n" + "\n".join(figure_block(figure) for figure in unassigned))
+    if unassigned_tables:
+        body.append(
+            "\\section*{表格 / Tables}\n"
+            + "\n".join(
+                source_table_block(
+                    table,
+                    data.get("layout_profile", "two-column") == "two-column" and not args.single_column,
+                )
+                for table in unassigned_tables
+            )
+        )
     table = experiment_table(data.get("experiments", []))
     if table:
         body.append(table)

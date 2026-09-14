@@ -62,6 +62,7 @@ def validate(path: str) -> None:
             fail("section order must be contiguous and start at zero")
         quality = manifest["quality"]
         figures = manifest.get("figures", [])
+        tables = manifest.get("tables", [])
         missing_figures = set(quality.get("missing_figures", []))
         for figure in figures:
             required_figure = {"id", "asset_path", "source_page", "caption_en", "caption_zh", "alt_text_zh", "status"}
@@ -76,6 +77,23 @@ def validate(path: str) -> None:
                 fail(f"missing figure asset: {asset}")
             if figure["status"] == "missing" and figure["id"] not in missing_figures:
                 fail(f"missing figure {figure['id']} is not listed in quality.missing_figures")
+        for table in tables:
+            required_table = {"id", "caption_en", "caption_zh", "columns", "rows"}
+            if not required_table <= table.keys():
+                fail("each table needs id, captions, columns and rows")
+            if not table["caption_zh"].strip():
+                fail(f"table {table['id']} has no Chinese caption")
+            if not table.get("section_id"):
+                fail(f"table {table['id']} has no insertion section_id")
+            for column in table["columns"]:
+                if not column.get("header_zh", "").strip():
+                    fail(f"table {table['id']} has an untranslated column header")
+            width = len(table["columns"])
+            for row in table["rows"]:
+                cells = row.get("cells_zh", [])
+                english_cells = row.get("cells_en", [])
+                if len(cells) != width or any(str(en).strip() and not str(zh).strip() for en, zh in zip(english_cells, cells)):
+                    fail(f"table {table['id']} has missing Chinese cells")
         if manifest["processing_status"] == "needs_pdf_compile" and "tex/chinese.tex" not in names:
             fail("needs_pdf_compile artifact must preserve tex/chinese.tex")
 

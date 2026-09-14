@@ -36,4 +36,4 @@ Use it with a topic, for example: `Use $paperreader-research to find papers abou
 python3 skills/paperreader-research/scripts/validate_paper.py paperreader/fixtures/sample.paper
 ```
 
-The ZIP/manifest contract is documented in `skills/paperreader-research/references/artifact-schema.md`; venue tiers are editable in `venue-tiers.yaml`. Figure extraction helpers live in `skills/paperreader-research/scripts/`. Chinese PDF generation uses a two-column LaTeX profile by default and preserves source section/figure order.
+The ZIP/manifest contract is documented in `skills/paperreader-research/references/artifact-schema.md`; venue tiers are editable in `venue-tiers.yaml`. Figure and table extraction helpers live in `skills/paperreader-research/scripts/`. Chinese PDF generation uses a two-column LaTeX profile by default and preserves source section, figure, and table order; every table has translated captions, headers, and cells.
