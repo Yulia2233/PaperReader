@@ -29,7 +29,7 @@ def validate(path: str) -> None:
         if "manifest.json" not in names:
             fail("manifest.json is missing")
         manifest = json.loads(archive.read("manifest.json"))
-        required = {"schema_version", "artifact_type", "processing_status", "paper", "sections", "analysis", "experiments", "quality"}
+        required = {"schema_version", "artifact_type", "processing_status", "layout_profile", "paper", "sections", "analysis", "experiments", "quality"}
         missing = required - manifest.keys()
         if missing:
             fail(f"missing manifest fields: {sorted(missing)}")
@@ -37,6 +37,8 @@ def validate(path: str) -> None:
             fail("unsupported .paper schema")
         if manifest["processing_status"] not in STATUSES:
             fail("invalid processing_status")
+        if manifest["layout_profile"] not in {"two-column", "single-column"}:
+            fail("layout_profile must be two-column or single-column")
         paper = manifest["paper"]
         for key in ("title", "authors", "year", "venue", "venue_tier", "english_pdf", "chinese_pdf"):
             if key not in paper:

@@ -13,6 +13,7 @@ pub struct PaperReaderApp {
     show_translation: bool,
     selected_section: Option<String>,
     current_page: usize,
+    continuous_reading: bool,
     textures: HashMap<String, TextureHandle>,
     pdfium: Option<Pdfium>,
     pdf_error: Option<String>,
@@ -43,6 +44,7 @@ impl PaperReaderApp {
             show_translation: true,
             selected_section: None,
             current_page: 0,
+            continuous_reading: true,
             textures: HashMap::new(),
             pdfium,
             pdf_error,
@@ -72,6 +74,19 @@ impl PaperReaderApp {
     }
     fn current_pdf(&self) -> Option<PathBuf> {
         self.current().pdf_path(self.show_translation)
+    }
+
+    fn pdf_page_count(&self) -> usize {
+        let Some(path) = self.current_pdf() else {
+            return 0;
+        };
+        let Some(pdfium) = self.pdfium.as_ref() else {
+            return 0;
+        };
+        pdfium
+            .load_pdf_from_file(&path, None)
+            .map(|document| document.pages().len() as usize)
+            .unwrap_or(0)
     }
 
     fn list_panel(&mut self, ui: &mut egui::Ui) {
@@ -156,11 +171,19 @@ impl PaperReaderApp {
     }
 
     fn document_panel(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
-        let paper = &self.current().artifact.paper;
-        let title = paper.title.clone();
-        let authors = paper.authors.join(", ");
-        let venue = paper.venue.clone();
-        let year = paper.year;
+        let (title, authors, venue, year) = {
+            let paper = &self.current().artifact.paper;
+            (
+                paper.title.clone(),
+                paper.authors.join(", "),
+                paper.venue.clone(),
+                paper.year,
+            )
+        };
+        let total_pages = self.pdf_page_count();
+        if total_pages > 0 {
+            self.current_page = self.current_page.min(total_pages - 1);
+        }
         ui.horizontal(|ui| {
             ui.heading(title);
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -195,9 +218,14 @@ impl PaperReaderApp {
             if ui.button("上一页").clicked() && self.current_page > 0 {
                 self.current_page -= 1;
             }
-            if ui.button("下一页").clicked() {
+            if ui.button("下一页").clicked() && self.current_page + 1 < total_pages {
                 self.current_page += 1;
             }
+            if total_pages > 0 {
+                ui.add(egui::Slider::new(&mut self.current_page, 0..=total_pages - 1).text("页码"));
+                ui.label(format!("{}/{}", self.current_page + 1, total_pages));
+            }
+            ui.checkbox(&mut self.continuous_reading, "连续阅读");
             ui.label(if self.show_translation {
                 "中文 PDF"
             } else {
@@ -225,10 +253,18 @@ impl PaperReaderApp {
         ScrollArea::vertical()
             .auto_shrink([false, false])
             .show(ui, |ui| {
-                if let Some(texture) = self.render_page(ctx, self.current_page) {
-                    let max_width = ui.available_width().max(300.0);
-                    let scale = (max_width / texture.size_vec2().x).min(1.0);
-                    ui.image((texture.id(), texture.size_vec2() * scale));
+                let pages: Vec<usize> = if self.continuous_reading {
+                    (0..total_pages).collect()
+                } else {
+                    vec![self.current_page]
+                };
+                for page in pages {
+                    if let Some(texture) = self.render_page(ctx, page) {
+                        let max_width = ui.available_width().max(300.0);
+                        let scale = (max_width / texture.size_vec2().x).min(1.0);
+                        ui.image((texture.id(), texture.size_vec2() * scale));
+                        ui.separator();
+                    }
                 }
             });
     }

@@ -19,6 +19,7 @@ def main() -> int:
     data = json.loads(args.manifest.read_text(encoding="utf-8"))
     data.setdefault("schema_version", "2.0")
     data.setdefault("artifact_type", "paperreader")
+    data.setdefault("layout_profile", "two-column")
     data.setdefault("quality", {})
     data["paper"]["english_pdf"] = "pdf/english.pdf"
     data["paper"]["chinese_pdf"] = "pdf/chinese.pdf"

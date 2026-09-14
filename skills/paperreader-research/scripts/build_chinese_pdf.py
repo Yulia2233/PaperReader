@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a Chinese LaTeX paper and compile it with a preinstalled XeLaTeX."""
+"""Generate a publication-style, layout-preserving Chinese LaTeX PDF."""
 from __future__ import annotations
 
 import argparse
@@ -16,43 +16,26 @@ def latex_escape(value: str) -> str:
     return value
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("manifest", type=Path, help="JSON containing paper, sections and figures")
-    parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--font", type=Path, help="bundled .ttf/.otf CJK font")
-    parser.add_argument("--compiler", choices=["auto", "latexmk", "xelatex"], default="auto")
-    args = parser.parse_args()
-    data = json.loads(args.manifest.read_text(encoding="utf-8"))
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    tex_path = args.output_dir / "chinese.tex"
-    font_line = ""
-    if args.font:
-        font_line = "\\setCJKmainfont[Path=%s/,Extension=.ttf]{%s}\n" % (args.font.parent, args.font.stem)
-    body = []
-    for section in sorted(data.get("sections", []), key=lambda item: item.get("order", 0)):
-        body.append("\\section{%s}\n%s" % (latex_escape(section.get("title", "")), latex_escape(section.get("translated_text", ""))))
-    figure_tex = args.output_dir / "figures.tex"
-    if figure_tex.exists():
-        body.append("\\input{figures.tex}")
-    tex = """\\documentclass[a4paper,11pt]{ctexart}
-\\usepackage[margin=2.2cm]{geometry}
-\\usepackage{graphicx}
-\\usepackage{hyperref}
-\\usepackage{longtable}
-\\usepackage{booktabs}
-\\hypersetup{hidelinks}
-%% PaperReader generated source. Figures preserve original pixels; captions are translated.
-%s
-\\title{%s}
-\\author{%s}
-\\date{%s}
-\\begin{document}
-\\maketitle
-%s
-\\end{document}
-""" % (font_line, latex_escape(data["paper"]["title"]), latex_escape(", ".join(data["paper"].get("authors", []))), data["paper"].get("year", ""), "\n\n".join(body))
-    tex_path.write_text(tex, encoding="utf-8")
+def figure_block(figure: dict) -> str:
+    path = (figure.get("latex_path") or figure.get("asset_path", "")).removeprefix("assets/")
+    caption = latex_escape(figure.get("caption_zh", "") or figure.get("caption_en", ""))
+    figure_id = latex_escape(figure.get("id", "figure"))
+    if figure.get("status") == "missing" or not path:
+        return "\\begin{figure}[tb]\n\\centering\n\\fbox{\\parbox{0.9\\columnwidth}{\\centering 图片 %s 无法提取}}\n\\caption{%s}\\label{fig:%s}\n\\end{figure}" % (figure_id, caption, figure_id)
+    return "\\begin{figure}[tb]\n\\centering\n\\includegraphics[width=0.96\\columnwidth]{%s}\n\\caption{%s}\\label{fig:%s}\n\\end{figure}" % (path, caption, figure_id)
+
+
+def experiment_table(experiments: list[dict]) -> str:
+    if not experiments:
+        return ""
+    rows = []
+    for experiment in experiments:
+        values = [experiment.get("name", ""), experiment.get("what_it_tests", ""), experiment.get("what_it_proves", ""), experiment.get("result_summary", "")]
+        rows.append(" & ".join(latex_escape(value.replace("\n", " ")) for value in values) + r" \\")
+    return "\\clearpage\n\\onecolumn\n\\begin{table}[ht]\n\\centering\n\\caption{实验设置与结果摘要}\n\\label{tab:experiments}\n\\begin{tabularx}{0.98\\textwidth}{>{\\raggedright\\arraybackslash}p{0.16\\textwidth}>{\\raggedright\\arraybackslash}p{0.24\\textwidth}>{\\raggedright\\arraybackslash}p{0.25\\textwidth}X}\n\\toprule\n实验 & 验证什么 & 证明什么 & 结果 \\\\ \n\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\n\\end{tabularx}\n\\end{table}"
+
+
+def compile_pdf(args: argparse.Namespace, tex_path: Path) -> int:
     compiler = shutil.which("latexmk") if args.compiler in {"auto", "latexmk"} else None
     command = [compiler, "-xelatex", "-interaction=nonstopmode", "-halt-on-error", tex_path.name] if compiler else None
     if command is None:
@@ -68,6 +51,80 @@ def main() -> int:
         return result.returncode
     print(args.output_dir / "chinese.pdf")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("manifest", type=Path, help="intermediate manifest with translated_text values")
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--font", type=Path, help="bundled .ttf/.otf CJK font")
+    parser.add_argument("--compiler", choices=["auto", "latexmk", "xelatex"], default="auto")
+    parser.add_argument("--single-column", action="store_true", help="opt out of the source paper's two-column profile")
+    args = parser.parse_args()
+    data = json.loads(args.manifest.read_text(encoding="utf-8"))
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    tex_path = args.output_dir / "chinese.tex"
+    font_line = ""
+    if args.font:
+        extension = args.font.suffix.lstrip(".") or "ttf"
+        font_line = "\\setCJKmainfont[Path=%s/,Extension=.%s]{%s}\n" % (args.font.parent, extension, args.font.stem)
+
+    figures_by_section: dict[str, list[dict]] = {}
+    unassigned: list[dict] = []
+    for figure in data.get("figures", []):
+        section_id = figure.get("section_id") or figure.get("after_section_id")
+        if section_id:
+            figures_by_section.setdefault(section_id, []).append(figure)
+        else:
+            unassigned.append(figure)
+
+    body: list[str] = []
+    sections = sorted(data.get("sections", []), key=lambda item: item.get("order", 0))
+    for index, section in enumerate(sections):
+        section_id = section.get("id", f"section-{index}")
+        title = latex_escape(section.get("title", ""))
+        translated = section.get("translated_text", "")
+        if section_id == "abstract" or index == 0:
+            body.append("\\begin{abstract}\n%s\n\\end{abstract}" % translated)
+        elif section_id != "references":
+            body.append("\\section{%s}\n%s" % (title, translated))
+        else:
+            body.append("\\section*{%s}\n%s" % (title, translated))
+        body.extend(figure_block(figure) for figure in figures_by_section.get(section_id, []))
+    if unassigned:
+        body.append("\\section*{图表 / Figures}\n" + "\n".join(figure_block(figure) for figure in unassigned))
+    table = experiment_table(data.get("experiments", []))
+    if table:
+        body.append(table)
+
+    two_column = not args.single_column and data.get("layout_profile", "two-column") == "two-column"
+    document_class = "\\documentclass[a4paper,10pt]{ctexart}" if two_column else "\\documentclass[a4paper,11pt]{ctexart}"
+    layout = "" if not two_column else "\\twocolumn"
+    tex = r"""%% PaperReader generated source.
+%% Layout constraints: preserve section order, figure order, captions, and the
+%% source paper's two-column reading profile. Figures keep original pixels.
+%% Text is translated; figure-internal labels are intentionally unchanged.
+%s
+%s
+\usepackage[margin=1.75cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{caption}
+\setlength{\columnsep}{0.65cm}
+\hypersetup{hidelinks}
+\title{%s}
+\author{%s}
+\date{%s}
+\begin{document}
+\maketitle
+%s
+\end{document}
+""" % (document_class, font_line + layout, latex_escape(data["paper"]["title"]), latex_escape(", ".join(data["paper"].get("authors", []))), data["paper"].get("year", ""), "\n\n".join(body))
+    tex_path.write_text(tex, encoding="utf-8")
+    return compile_pdf(args, tex_path)
 
 
 if __name__ == "__main__":

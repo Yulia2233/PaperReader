@@ -7,8 +7,9 @@ Required top-level fields:
 - `schema_version`: exactly `"2.0"`; `artifact_type` is `"paperreader"`.
 - `processing_status`: `complete`, `needs_fulltext`, or `needs_pdf_compile`.
 - `paper`: title, authors, year, venue, venue tier, identifiers, source URLs, license, and PDF paths.
+- `layout_profile`: `two-column` or `single-column`; generated Chinese PDF must follow this source layout profile unless explicitly overridden.
 - `sections`: ordered section objects with `id`, `title`, zero-based `order`, and optional English/Chinese page mappings.
-- `figures`: figure metadata, source page, captions, alt text, extraction status, and archive asset path.
+- `figures`: figure metadata, source page, captions, alt text, extraction status, archive asset path, and an insertion point (`section_id` or `after_section_id`).
 - `analysis`: problem, contributions, innovations, and method summary.
 - `experiments`: rows for the viewer table. `what_it_tests` and `what_it_proves` are required even for theoretical or survey papers.
 - `quality`: evidence notes, missing inputs, and translation status.
@@ -20,6 +21,7 @@ The canonical object is:
   "schema_version": "2.0",
   "artifact_type": "paperreader",
   "processing_status": "complete",
+  "layout_profile": "two-column",
   "paper": {
     "title": "",
     "authors": [],
