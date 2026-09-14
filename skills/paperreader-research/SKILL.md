@@ -1,0 +1,30 @@
+---
+name: paperreader-research
+description: Discover and analyze computer-science papers for a topic, producing one validated bilingual .paper.json artifact per selected paper for the PaperReader viewer.
+metadata:
+  short-description: Generate bilingual paper reading artifacts
+---
+
+# PaperReader Research
+
+Use this skill when the user provides a computer-science research topic and wants curated papers with source text, Simplified Chinese translation, and structured analysis for the PaperReader desktop viewer.
+
+## Workflow
+
+1. Clarify the topic only when it is too broad. Default to 10 papers; honor an explicit count.
+2. Search authoritative metadata sources such as OpenAlex, Crossref, Semantic Scholar, arXiv, and DBLP. Prefer official venue pages and open-access full text when verifying claims.
+3. Deduplicate by DOI, arXiv identifier, then normalized title plus first author. Rank by topic relevance, configured venue tier, recency/citation context, and full-text availability.
+4. Use only legally available open full text or PDFs/HTML supplied by the user. Never bypass a paywall. A paper without full text still gets an artifact with `processing_status: "needs_fulltext"`.
+5. For every selected paper, extract ordered sections. Preserve source text and write a faithful Simplified Chinese translation beside it. Keep formulas, code identifiers, metric names, and citations intact.
+6. Summarize only evidence in the paper. Fill `analysis.problem`, `analysis.contributions`, `analysis.innovations`, and `analysis.method_summary`. Represent every reported experiment in `experiments`, with what it tests and what it proves. Do not invent experiments, numbers, or citations.
+7. Write exactly one `<slug>.paper.json` file per selected paper. Validate it with `scripts/validate_artifact.py` before reporting completion.
+
+## Artifact contract
+
+Read [references/artifact-schema.md](references/artifact-schema.md) before writing artifacts. Use [references/venue-tiers.yaml](references/venue-tiers.yaml) for the editable venue ranking. Keep uncertainty and missing material in `quality`; do not hide incomplete extraction.
+
+## Inputs and outputs
+
+Accept a topic, optional paper count, optional output directory, and optional user-provided PDF/HTML paths. Match supplied files to candidates by DOI, arXiv ID, or title. The output directory should contain only the selected artifacts unless the user asks for a report.
+
+The viewer accepts a single artifact or recursively scans a directory for `*.paper.json`.

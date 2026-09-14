@@ -1,0 +1,4 @@
+interface:
+  display_name: PaperReader Research
+  short_description: Find computer-science papers and create bilingual PaperReader files
+  default_prompt: Use $paperreader-research to find the most relevant computer-science papers for this topic and generate validated bilingual .paper.json artifacts: {{topic}}

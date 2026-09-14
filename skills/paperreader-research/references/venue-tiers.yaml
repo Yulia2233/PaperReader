@@ -1,0 +1,47 @@
+# Editable hints for computer-science venue ranking. Names are case-insensitive.
+tier_1:
+  conferences:
+    - NeurIPS
+    - ICML
+    - ICLR
+    - AAAI
+    - IJCAI
+    - ACL
+    - CVPR
+    - ICCV
+    - ECCV
+    - SIGIR
+    - KDD
+    - WWW
+    - SOSP
+    - OSDI
+    - PLDI
+    - POPL
+    - SIGCOMM
+    - NSDI
+    - MICRO
+    - ISCA
+  journals:
+    - Journal of Machine Learning Research
+    - IEEE Transactions on Pattern Analysis and Machine Intelligence
+    - ACM Computing Surveys
+    - Communications of the ACM
+    - IEEE Transactions on Computers
+tier_2:
+  conferences:
+    - EMNLP
+    - NAACL
+    - COLING
+    - WACV
+    - ICASSP
+    - CIKM
+    - ECAI
+    - AISTATS
+    - UAI
+    - Middleware
+    - EuroSys
+  journals:
+    - Machine Learning
+    - Artificial Intelligence
+    - Data Mining and Knowledge Discovery
+    - IEEE Transactions on Knowledge and Data Engineering
