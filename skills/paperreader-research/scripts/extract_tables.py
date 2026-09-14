@@ -81,14 +81,8 @@ class TableParser(HTMLParser):
                     "caption_zh": "",
                     "section_id": "",
                     "source_page": None,
-                    "columns": [{"header_en": cell, "header_zh": ""} for cell in header],
-                    "rows": [
-                        {
-                            "cells_en": (([""] + list(row)) if len(row) == width - 1 else list(row) + [""] * (width - len(row))),
-                            "cells_zh": ["" for _ in range(width)],
-                        }
-                        for row in data_rows
-                    ],
+                    "columns": [{"header_en": cell} for cell in header],
+                    "rows": [{"cells_en": ([""] + list(row)) if len(row) == width - 1 else list(row) + [""] * (width - len(row))} for row in data_rows],
                 })
             self.current = None
 

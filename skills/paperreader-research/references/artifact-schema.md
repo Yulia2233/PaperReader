@@ -10,7 +10,7 @@ Required top-level fields:
 - `layout_profile`: `two-column` or `single-column`; generated Chinese PDF must follow this source layout profile unless explicitly overridden.
 - `sections`: ordered section objects with `id`, `title`, zero-based `order`, and optional English/Chinese page mappings.
 - `figures`: figure metadata, source page, captions, alt text, extraction status, archive asset path, and an insertion point (`section_id` or `after_section_id`).
-- `tables`: every source-paper table, with English and translated Chinese captions, headers, cells, source page, and insertion `section_id`. Empty Chinese fields are invalid for a completed artifact.
+- `tables`: every source-paper table, with a translated Chinese caption, source-preserved English headers/cells, source page, and insertion `section_id`. Table cell translation is intentionally not required.
 - `analysis`: problem, contributions, innovations, and method summary.
 - `experiments`: rows for the viewer table. `what_it_tests` and `what_it_proves` are required even for theoretical or survey papers.
 - `quality`: evidence notes, missing inputs, and translation status.
@@ -38,6 +38,7 @@ The canonical object is:
   },
   "sections": [],
   "figures": [],
+  "tables": [],
   "tables": [],
   "analysis": {
     "problem": "",

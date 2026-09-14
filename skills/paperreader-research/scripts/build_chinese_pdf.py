@@ -16,6 +16,19 @@ def latex_escape(value: str) -> str:
     return value
 
 
+def normalize_table_text(value: str) -> str:
+    """Render source LaTeX math markers as readable symbols without translating cells."""
+    replacements = {
+        r"\uparrow": "↑",
+        r"\downarrow": "↓",
+        r"\times": "×",
+        "^{3}": "³",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    return value
+
+
 def figure_block(figure: dict) -> str:
     path = (figure.get("latex_path") or figure.get("asset_path", "")).removeprefix("assets/")
     caption = latex_escape(figure.get("caption_zh", "") or figure.get("caption_en", ""))
@@ -39,12 +52,12 @@ def source_table_block(table: dict, two_column: bool) -> str:
     columns = table.get("columns", [])
     if not columns:
         return ""
-    headers = [latex_escape(column.get("header_zh") or column.get("header_en", "")) for column in columns]
+    headers = [latex_escape(normalize_table_text(column.get("header_en", ""))) for column in columns]
     rows = []
     for row in table.get("rows", []):
-        cells = row.get("cells_zh") or row.get("cells_en", [])
+        cells = row.get("cells_en", [])
         cells = list(cells) + [""] * (len(headers) - len(cells))
-        rows.append(" & ".join(latex_escape(str(cell)) for cell in cells[:len(headers)]) + r" \\")
+        rows.append(" & ".join(latex_escape(normalize_table_text(str(cell))) for cell in cells[:len(headers)]) + r" \\")
     column_spec = "X" * len(headers)
     environment = "table*" if two_column else "table"
     width = "0.98\\textwidth" if two_column else "0.98\\linewidth"
