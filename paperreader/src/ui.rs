@@ -387,6 +387,7 @@ fn bind_pdfium() -> (Option<Pdfium>, Option<String>) {
     }
     if let Ok(current_dir) = std::env::current_dir() {
         candidates.push(current_dir.join("resources/pdfium"));
+        candidates.push(current_dir.join("paperreader/resources/pdfium"));
     }
     for directory in candidates {
         let library = Pdfium::pdfium_platform_library_name_at_path(&directory);

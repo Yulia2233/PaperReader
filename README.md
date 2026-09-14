@@ -5,14 +5,16 @@ PaperReader has two pieces:
 - `skills/paperreader-research/` is a Codex skill that researches computer-science topics and produces one bilingual `<slug>.paper` ZIP package per paper.
 - `paperreader/` is a Rust/egui desktop viewer for one package or a directory of packages. It renders the embedded English/Chinese PDFs with PDFium.
 
-## Run the viewer
+## Install and run the viewer
 
 ```bash
-cd paperreader
-cargo run -- fixtures/sample.paper
+cargo install --path paperreader --locked --force
+paperreader paperreader/fixtures/sample.paper
 # or load a collection
-cargo run -- /path/to/paper-artifacts
+paperreader /path/to/paper-artifacts
 ```
+
+`cargo run` is only the development form; after installation the user-facing command is `paperreader`.
 
 The viewer embeds Noto Sans SC under the SIL Open Font License so Chinese UI text renders on machines without a CJK font. The UI has a paper/section navigator on the left, an English/中文 PDF toggle in the document pane, and structured analysis plus an experiment table on the right. Release bundles must include the matching PDFium library under `resources/pdfium`.
 
