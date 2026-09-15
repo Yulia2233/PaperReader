@@ -90,8 +90,8 @@ def validate(path: str) -> None:
                 english_cells = row.get("cells_en", [])
                 if len(english_cells) != width:
                     fail(f"table {table['id']} has inconsistent source cell count")
-        if manifest["processing_status"] == "needs_pdf_compile" and "tex/chinese.tex" not in names:
-            fail("needs_pdf_compile artifact must preserve tex/chinese.tex")
+        if manifest["processing_status"] == "needs_pdf_compile" and not manifest["sections"]:
+            fail("needs_pdf_compile artifact must preserve translated section source in manifest.json")
 
 
 def main() -> int:

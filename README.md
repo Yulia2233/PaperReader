@@ -28,7 +28,14 @@ The tracked skill package can be copied into the Codex skill directory:
 cp -R skills/paperreader-research ~/.codex/skills/paperreader-research
 ```
 
-Use it with a topic, for example: `Use $paperreader-research to find papers about retrieval-augmented generation.` The skill uses open metadata/full text or user-supplied PDFs, extracts figures, translates captions, compiles the Chinese LaTeX PDF, and never bypasses paywalls.
+Use it with a topic, for example: `Use $paperreader-research to find papers about retrieval-augmented generation.` The skill uses open metadata/full text or user-supplied PDFs, extracts figures, translates captions, generates the Chinese PDF directly with ReportLab, and never bypasses paywalls. The default path does not require a LaTeX distribution.
+
+Install the lightweight runtime dependencies on macOS with:
+
+    python3 -m pip install --user -r skills/paperreader-research/requirements.txt
+    brew install poppler
+
+ReportLab renders the Chinese PDF with the SIL Open Font License font bundled in the skill. Poppler provides `pdfimages` for extracting original figures from source PDFs.
 
 ## Validate artifacts
 
@@ -36,4 +43,4 @@ Use it with a topic, for example: `Use $paperreader-research to find papers abou
 python3 skills/paperreader-research/scripts/validate_paper.py paperreader/fixtures/sample.paper
 ```
 
-The ZIP/manifest contract is documented in `skills/paperreader-research/references/artifact-schema.md`; venue tiers are editable in `venue-tiers.yaml`. Figure and table extraction helpers live in `skills/paperreader-research/scripts/`. Chinese PDF generation uses a two-column LaTeX profile by default and preserves source section, figure, and table order; every table has translated captions, headers, and cells.
+The ZIP/manifest contract is documented in `skills/paperreader-research/references/artifact-schema.md`; venue tiers are editable in `venue-tiers.yaml`. Figure and table extraction helpers live in `skills/paperreader-research/scripts/`. Chinese PDF generation uses a two-column ReportLab profile by default and preserves source section, figure, and table order; every table has a translated caption while source headers and cells remain unchanged.
