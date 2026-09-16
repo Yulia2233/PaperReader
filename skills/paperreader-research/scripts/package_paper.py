@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package manifest, PDFs, LaTeX source and figures into one .paper ZIP."""
+"""Package manifest, PDFs, optional renderer source and figures into one .paper ZIP."""
 from __future__ import annotations
 
 import argparse

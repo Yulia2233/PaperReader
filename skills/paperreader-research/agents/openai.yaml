@@ -1,4 +1,7 @@
 interface:
-  display_name: PaperReader Research
-  short_description: Find computer-science papers and create bilingual PaperReader packages
-  default_prompt: Use $paperreader-research to find the most relevant computer-science papers for this topic and generate validated bilingual .paper packages with English and Chinese PDFs: {{topic}}
+  display_name: "PaperReader Research"
+  short_description: "Read papers and create bilingual PaperReader packages"
+  default_prompt: "Use $paperreader-research to process this paper or topic and generate a validated bilingual .paper package: {{topic}}"
+
+policy:
+  allow_implicit_invocation: true

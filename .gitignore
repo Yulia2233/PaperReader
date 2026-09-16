@@ -1,6 +1,8 @@
 /paperreader/target/
 .DS_Store
 __pycache__/
+/output/
+/tmp/
 paperreader/resources/pdfium/*.dylib
 paperreader/resources/pdfium/*.so
 paperreader/resources/pdfium/*.dll

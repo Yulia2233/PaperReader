@@ -7,7 +7,7 @@ Required top-level fields:
 - `schema_version`: exactly `"2.0"`; `artifact_type` is `"paperreader"`.
 - `processing_status`: `complete`, `needs_fulltext`, or `needs_pdf_compile`.
 - `paper`: title, authors, year, venue, venue tier, identifiers, source URLs, license, and PDF paths.
-- `layout_profile`: `two-column` or `single-column`; generated Chinese PDF must follow this source layout profile unless explicitly overridden.
+- `layout_profile`: `two-column` or `single-column`; the ReportLab-generated Chinese PDF must follow this source layout profile unless explicitly overridden.
 - `sections`: ordered section objects with `id`, `title`, zero-based `order`, and optional English/Chinese page mappings.
 - `figures`: figure metadata, source page, captions, alt text, extraction status, archive asset path, and an insertion point (`section_id` or `after_section_id`).
 - `tables`: every source-paper table, with a translated Chinese caption, source-preserved English headers/cells, source page, and insertion `section_id`. Table cell translation is intentionally not required.
@@ -55,4 +55,4 @@ The canonical object is:
 }
 ```
 
-For unavailable full text, preserve metadata and set `processing_status` to `needs_fulltext`; put the requested file or URL in `quality.missing_inputs`. If LaTeX is unavailable, preserve `tex/chinese.tex` and set `processing_status` to `needs_pdf_compile`; do not create a fake PDF.
+For unavailable full text, preserve metadata and set `processing_status` to `needs_fulltext`; put the requested file or URL in `quality.missing_inputs`. If the PDF renderer is unavailable, preserve the manifest and extracted source assets and set `processing_status` to `needs_pdf_compile`; do not create a fake PDF. A LaTeX source file is optional legacy material, not a package requirement.
